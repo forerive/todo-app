@@ -2,38 +2,48 @@ import { Injectable } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { Todo } from './todo.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 @Injectable()
 export class TodoService {
-  private todos: Todo[] = [];
-
-  findAll() {
-    return this.todos;
+  constructor(
+    @InjectRepository(Todo)
+    private readonly todoRepository: Repository<Todo>,
+  ) {}
+  async findAll() {
+    return await this.todoRepository.find();
   }
 
-  create(createTodoDto: CreateTodoDto) {
-    const todo: Todo = {
-      id: this.todos.length + 1,
+  async create(createTodoDto: CreateTodoDto) {
+    const todo = this.todoRepository.create({
       title: createTodoDto.title,
       completed: false,
-    };
-    this.todos.push(todo);
+    });
+    await this.todoRepository.save(todo);
     return todo;
   }
 
-  update(id: string, updateTodoDto: UpdateTodoDto) {
-    const todo = this.todos.find((todo) => todo.id === Number(id));
+  async update(id: string, updateTodoDto: UpdateTodoDto) {
+    const todo = await this.todoRepository.findOne({
+      where: { id: Number(id) },
+    });
     if (!todo) {
-      throw new Error('Todo not found');
+      throw new NotFoundException('Todo not found');
     }
     todo.completed = updateTodoDto.completed;
+    await this.todoRepository.save(todo);
     return todo;
   }
 
-  delete(id: string) {
-    const todo = this.todos.find((todo) => todo.id === Number(id));
+  async delete(id: string) {
+    const todo = await this.todoRepository.findOne({
+      where: { id: Number(id) },
+    });
     if (!todo) {
-      throw new Error('Todo not found');
+      throw new NotFoundException('Todo not found');
     }
-    this.todos = this.todos.filter((todo) => todo.id !== Number(id));
+    await this.todoRepository.delete({ id: Number(id) });
+    return todo;
   }
 }

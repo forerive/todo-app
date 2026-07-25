@@ -1,0 +1,9 @@
+# .dockerignore は Docker版の .gitignore のようなもの
+# .gitignore → Gitに送らないファイル
+# .dockerignore → Dockerに送らないファイル
+.dockerignore → Dockerに送らないファイル
+node_modules
+dist
+.git
+coverage
+.env

@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+# Windowsの3000番ポートを、コンテナの3000番ポートにつなぐ。
+    ports:
+      - "3000:3000"
+# postgresを起動してから、app(NestJS)を起動する。
+# appを起動が先だとpostgresに接続できないエラーが発生しうるため。
+    depends_on:
+      - postgres
+# NestJSがPostgreSQLへ接続するための設定
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: todo
+
+# PostgreSQLは公式がDockerイメージを公開しているので、自分でDockerfileを書かなくても使える
+  postgres:
+    image: postgres:17
+# Windowsの5432番ポートを、コンテナの5432番ポートにつなぐ。
+    ports:
+      - "5432:5432"
+# PostgreSQLコンテナの初期設定
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todo
+ # コンテナを削除してもDBデータを残す
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

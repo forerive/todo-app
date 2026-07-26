@@ -7,5 +7,6 @@ COPY package.json yarn.lock ./
 RUN yarn install
 # ソースコード全部をDockerコンテナの中にコピーする。
 COPY . .
+RUN yarn build
 # コンテナが起動したら、yarn start:devが実行される。
-CMD ["yarn", "start:dev"]
+CMD ["yarn", "start:prod"]

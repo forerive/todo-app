@@ -21,6 +21,9 @@ import { ConfigModule } from '@nestjs/config';
       entities: [Todo],
 
       synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
   ],
   controllers: [AppController],

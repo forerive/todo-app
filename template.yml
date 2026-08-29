@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: My First CloudFormation
+Parameters:
+
+  DbName:
+    Type: String
+    Default: todo
+
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: yusuke-todo-bucket
+
+  TodoTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: todo-app
+      Cpu: '256'
+      Memory: '512'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt TodoTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: todo-app
+          Image: 554013701915.dkr.ecr.ap-northeast-1.amazonaws.com/todo-app:latest
+          PortMappings:
+            - ContainerPort: 3000
+
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/todo-app
+              awslogs-region: ap-northeast-1
+              awslogs-stream-prefix: ecs
+
+          Environment:
+            - Name: DB_HOST
+              Value: todo-db.cpsaq8ismjqh.ap-northeast-1.rds.amazonaws.com
+            - Name: DB_PORT
+              Value: '5432'
+            - Name: DB_USERNAME
+              Value: postgres
+            - Name: DB_DATABASE
+              Value: !Ref DbName
+          Secrets:
+            - Name: DB_PASSWORD
+              ValueFrom: "arn:aws:secretsmanager:ap-northeast-1:554013701915:secret:todo-db-secret-8sZIkh:DB_PASSWORD::"
+
+  TodoLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/todo-app
+
+  TodoService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - TodoListener
+
+    Properties:
+      ServiceName: todo-service-cfn
+      Cluster: todo-cluster
+      TaskDefinition: !Ref TodoTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: todo-app
+          ContainerPort: 3000
+          TargetGroupArn: !Ref TodoTargetGroup
+
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+         Subnets:
+           - subnet-0fbd579fff7f6bbde
+           - subnet-0b613d6b273ae87c2
+           - subnet-0cdb6e934789ad3b3
+  
+         SecurityGroups:
+           - sg-07e902bcf8823d0dd
+  
+         AssignPublicIp: ENABLED
+
+  TodoTaskExecutionRole:
+    Type: AWS::IAM::Role
+  
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      
+      Policies:
+      - PolicyName: ReadTodoDbSecret
+
+        PolicyDocument:
+          Version: '2012-10-17'
+
+          Statement:
+            - Effect: Allow
+
+              Action:
+                - secretsmanager:GetSecretValue
+
+              Resource:
+                - arn:aws:secretsmanager:ap-northeast-1:554013701915:secret:todo-db-secret-8sZIkh
+  
+  TodoAlbSecurityGroup:
+  
+    Type: AWS::EC2::SecurityGroup
+  
+    Properties:
+  
+      GroupDescription: Security group for Todo ALB
+  
+      VpcId: vpc-08c7a0ff090843c2e
+  
+      SecurityGroupIngress:
+  
+        - IpProtocol: tcp
+  
+          FromPort: 80
+  
+          ToPort: 80
+  
+          CidrIp: 0.0.0.0/0
+  
+  TodoEcsIngressFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: sg-07e902bcf8823d0dd
+      IpProtocol: tcp
+      FromPort: 3000
+      ToPort: 3000
+      SourceSecurityGroupId: !Ref TodoAlbSecurityGroup
+
+  
+  TodoALB:
+  
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  
+    Properties:
+  
+      Name: todo-alb
+  
+      Scheme: internet-facing
+  
+      Type: application
+  
+      Subnets:
+  
+        - subnet-0fbd579fff7f6bbde
+  
+        - subnet-0b613d6b273ae87c2
+  
+        - subnet-0cdb6e934789ad3b3
+  
+      SecurityGroups:
+  
+        - !Ref TodoAlbSecurityGroup
+  
+
+  
+  TodoTargetGroup:
+  
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  
+    Properties:
+  
+      Name: todo-tg
+  
+      VpcId: vpc-08c7a0ff090843c2e
+  
+      Protocol: HTTP
+  
+      Port: 3000
+  
+      TargetType: ip
+  
+      HealthCheckPath: /
+  
+
+  
+  TodoListener:
+  
+    Type: AWS::ElasticLoadBalancingV2::Listener
+  
+    Properties:
+  
+      LoadBalancerArn: !Ref TodoALB
+  
+      Port: 80
+  
+      Protocol: HTTP
+  
+      DefaultActions:
+  
+        - Type: forward
+  
+          TargetGroupArn: !Ref TodoTargetGroup

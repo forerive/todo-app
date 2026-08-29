@@ -1,0 +1,17 @@
+version: 0.2
+
+phases: 
+  install:
+    commands:
+      - yarn install
+  pre_build:
+    commands:
+      - yarn test
+      - aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 554013701915.dkr.ecr.ap-northeast-1.amazonaws.com
+  build:
+    commands:
+      - docker build -t todo-app .
+  post_build:
+    commands:
+      - docker tag todo-app:latest 554013701915.dkr.ecr.ap-northeast-1.amazonaws.com/todo-app:latest
+      - docker push 554013701915.dkr.ecr.ap-northeast-1.amazonaws.com/todo-app:latest

@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TodoModule } from './todo/todo.module';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 import { Todo } from './todo/todo.entity';
 import { User } from './user/user.entity';
 
@@ -32,6 +33,7 @@ import { User } from './user/user.entity';
 
     TodoModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

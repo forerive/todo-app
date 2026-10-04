@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
@@ -20,12 +21,14 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
   @Get()
-  findAll() {
-    return this.todoService.findAll();
+  findAll(@Req() request) {
+    return this.todoService.findAll(
+      request.user.userId
+    );
   }
   @Post()
-  create(@Body() createTodoDto: CreateTodoDto) {
-    return this.todoService.create(createTodoDto);
+  create(@Body() createTodoDto: CreateTodoDto, @Req() request) {
+    return this.todoService.create(createTodoDto, request.user.userId,);
   }
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto) {

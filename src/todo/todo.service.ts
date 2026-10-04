@@ -10,14 +10,23 @@ export class TodoService {
     @InjectRepository(Todo)
     private readonly todoRepository: Repository<Todo>,
   ) {}
-  async findAll() {
-    return await this.todoRepository.find();
+  async findAll(userId: number) {
+    return await this.todoRepository.find({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
   }
 
-  async create(createTodoDto: CreateTodoDto) {
+  async create(createTodoDto: CreateTodoDto, userId: number) {
     const todo = this.todoRepository.create({
       title: createTodoDto.title,
       completed: false,
+      user: {
+        id: userId,
+      },
     });
     await this.todoRepository.save(todo);
     return todo;

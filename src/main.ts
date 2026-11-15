@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // DTOのValidationを有効化
   app.useGlobalPipes(new ValidationPipe());
 
@@ -18,6 +18,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  app.enableCors({
+    origin: 'http://127.0.0.1:5500',
+  });
 
   await app.listen(process.env.PORT ?? 3000);
 }
